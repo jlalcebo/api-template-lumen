@@ -1,0 +1,9 @@
+#!/usr/bin/sh
+
+if [ -d .git ] && ! [ -f .git/hooks/pre-commit ]; then
+    echo "> install pre-commit hook for code lint and style"
+    cp --update contrib/pre-commit .git/hooks/pre-commit
+    chmod +x .git/hooks/pre-commit
+else
+    echo "> ignore pre-commit hook"
+fi

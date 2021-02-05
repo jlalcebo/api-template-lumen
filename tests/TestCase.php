@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests;
+
+use Laravel\Lumen\Application;
+use Laravel\Lumen\Testing\TestCase as BaseTestCase;
+
+abstract class TestCase extends BaseTestCase
+{
+    /**
+     * Creates the application.
+     *
+     * @return Application
+     */
+    public function createApplication(): Application
+    {
+        return require __DIR__ . '/../bootstrap/app.php';
+    }
+}

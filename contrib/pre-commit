@@ -1,0 +1,51 @@
+#!/usr/bin/sh
+
+# Based on code from http://tech.zumba.com/2014/04/14/control-code-quality/
+
+CODE_STANDARD="PSR12"
+
+PROJECT=$(php -r "echo dirname(dirname(dirname(realpath('$0'))));")
+STAGED_FILES_CMD=$(git diff --cached --name-only --diff-filter=ACMR HEAD | grep \\.php)
+
+# Determine if a file list is passed
+if [ "$#" -eq 1 ]; then
+    oIFS=$IFS
+    IFS='
+    '
+    sFILES="$1"
+    IFS=${oIFS}
+fi
+sFILES=${sFILES:-$STAGED_FILES_CMD}
+
+echo "Checking PHP lint..."
+for FILE in ${sFILES}; do
+    # shellcheck disable=SC2086
+    php -l -d display_errors=0 $PROJECT/$FILE
+    # shellcheck disable=SC2181
+    if [ $? != 0 ]; then
+        echo "Fix the error before commit."
+        exit 1
+    fi
+    FILES="$FILES $PROJECT/$FILE"
+done
+
+# Run the code style checker and fixes.
+# shellcheck disable=SC2086
+if [ -f ./vendor/bin/phpcs ] && [ -f ./vendor/bin/phpcbf ] && [ -n "$FILES" ]; then
+    echo "Running phpcs..."
+    ./vendor/bin/phpcs --standard=$CODE_STANDARD --encoding=utf-8 -n -p $FILES
+    # shellcheck disable=SC2181
+    if [ $? != 0 ]; then
+        echo "Coding standards errors have been detected. Running phpcbf..."
+        ./vendor/bin/phpcbf -n -p --standard=$CODE_STANDARD --encoding=utf-8 $FILES
+        git add $FILES
+        echo "Running phpcs again..."
+        ./vendor/bin/phpcs --standard=$CODE_STANDARD --encoding=utf-8 -n -p $FILES
+        if [ $? != 0 ]; then
+            echo "Errors found not fixable automatically"
+            exit 1
+        fi
+    fi
+fi
+
+exit $?
